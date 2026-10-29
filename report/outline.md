@@ -47,6 +47,8 @@ removing FLAIR lowers ED Dice (p ≈ 1e-28) and WT Dice (p ≈ 2e-30); removing 
 |---|---|
 | outputs/figures/delta_dice.png | Results: Dice drop vs baseline per sub-region (main figure) |
 | outputs/figures/overlays_seed0.png | Results/Discussion: 2 best + 2 worst test cases, every model. Colours: blue NCR, orange ED, pink ET. Add a legend in the caption |
+| outputs/figures/metrics_overview.png | Results: every metric (Dice, IoU, HD95, recall per sub-region; accuracy, background recall) for all 5 models in one figure |
+| outputs/figures/hd95_boxplot.png | Results: per-case HD95 distribution (medians, robust to empty-region cases) |
 | outputs/figures/val_curves.png | Appendix: validation Dice per epoch |
 
 Discussion points from the overlays: 01393-000 and 00259-000 are near-perfect. 01480-000 is a genuine failure (its NCR

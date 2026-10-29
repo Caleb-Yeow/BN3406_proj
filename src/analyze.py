@@ -5,7 +5,7 @@ Writes to outputs/results/:
   delta.csv    change vs the 4-modality baseline, with a paired Wilcoxon test over test cases
   ranking.csv  modalities ranked by Dice drop for each sub-region
   hd95.csv     HD95 mean, median, IQR and number of empty-region cases, per experiment and region
-And to outputs/figures/: delta_dice.png, val_curves.png, hd95_boxplot.png
+And to outputs/figures/: delta_dice.png, val_curves.png, hd95_boxplot.png, metrics_overview.png
 
 Usage (from the project folder):
     python src/analyze.py
@@ -142,6 +142,31 @@ def main():
     ax.legend(fontsize=8, ncol=5, loc="lower center", bbox_to_anchor=(0.5, 1.0), frameon=False)
     fig.tight_layout()
     fig.savefig(fig_dir / "hd95_boxplot.png", dpi=200)
+
+    # Overview of every metric: grouped bars per sub-region, one colour per experiment, error bars = std over seeds
+    panels = [("dice", "Dice ↑"), ("iou", "IoU ↑"), ("hd95", "HD95 (mm, mean) ↓"), ("recall", "Recall ↑")]
+    fig, axes = plt.subplots(2, 3, figsize=(13, 7))
+    width = 0.8 / len(order)
+    for ax, (m, title) in zip(axes.flat, panels):
+        for i, exp in enumerate(order):
+            xs = [j + (i - (len(order) - 1) / 2) * width for j in range(len(REGIONS))]
+            ax.bar(xs, [summary.loc[exp, (f"{m}_{r}", "mean")] for r in REGIONS], width,
+                   yerr=[summary.loc[exp, (f"{m}_{r}", "std")] for r in REGIONS], capsize=2, color=f"C{i}",
+                   label=exp.replace("_", " "))
+        ax.set_xticks(range(len(REGIONS)), [r.upper() for r in REGIONS])
+        ax.set_title(title)
+        if m != "hd95":
+            ax.set_ylim(0, 1)
+    for ax, (m, title) in zip(axes.flat[4:], [("accuracy", "Voxel accuracy ↑"), ("recall_bg", "Background recall ↑")]):
+        vals = [summary.loc[exp, (m, "mean")] for exp in order]
+        ax.bar(range(len(order)), vals, yerr=[summary.loc[exp, (m, "std")] for exp in order], capsize=2,
+               color=[f"C{i}" for i in range(len(order))])
+        ax.set_xticks(range(len(order)), [e.replace("_", " ") for e in order], fontsize=8)
+        ax.set_ylim(min(vals) - 0.002, 1)  # zoomed: every model is above 0.99 because background dominates
+        ax.set_title(title + " (zoomed axis)")
+    axes.flat[0].legend(fontsize=8, ncol=5, loc="lower left", bbox_to_anchor=(0, 1.12), frameon=False)
+    fig.tight_layout()
+    fig.savefig(fig_dir / "metrics_overview.png", dpi=200)
 
     cols = [(f"{m}_{r}", "mean") for m in ("dice", "hd95") for r in REGIONS]
     print(summary[[c for c in cols if c in summary]].round(4).to_string())
