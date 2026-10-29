@@ -98,6 +98,26 @@ Full metric table (mean ± std over seeds): see report/outline.md and outputs/re
 | T2w | -0.2 (p 0.197) | -0.4 (p 0.536) | +1.1 (p 0.470) | -1.0 (p 0.141) | -0.8 (p 0.150) |
 | FLAIR | +0.0 (p 0.967) | +0.8 (p 2.6e-10) * | -0.7 (p 0.852) | +0.4 (p 6.6e-07) * | -0.7 (p 0.657) |
 
+**HD95 in detail** (mm, lower is better; averaged over 3 seeds). HD95 = 95th percentile of the distances between the predicted and ground-truth surfaces, computed per case in 3D with MONAI `compute_hausdorff_distance` (1 mm voxels, so voxels = mm). A case scores 373.13 mm when a region is predicted but absent, or present but not predicted at all; a few such cases dominate the mean, so the median is the more robust summary. Figure: outputs/figures/hd95_boxplot.png.
+
+| Model | Region | Mean | Median (IQR) | Cases at 373 mm | Mean without them |
+|---|---|---|---|---|---|
+| all | NCR | 16.5 ± 3.1 | 4.0 (1.3–8.7) | 4.0 | 9.1 |
+| all | ED | 7.8 ± 0.4 | 3.6 (1.8–7.9) | 0.0 | 7.8 |
+| all | ET | 8.8 ± 1.6 | 1.5 (1.0–3.3) | 1.7 | 5.7 |
+| no T1n | NCR | 18.4 ± 0.1 | 4.2 (1.6–9.8) | 5.0 | 9.1 |
+| no T1n | ED | 7.9 ± 0.9 | 4.0 (2.0–8.1) | 0.0 | 7.9 |
+| no T1n | ET | 9.8 ± 0.9 | 1.9 (1.1–4.0) | 2.0 | 6.0 |
+| no T1c | NCR | 20.8 ± 1.7 | 8.8 (5.6–17.4) | 4.0 | 13.4 |
+| no T1c | ED | 9.4 ± 0.6 | 6.0 (4.1–9.7) | 0.0 | 9.4 |
+| no T1c | ET | 17.2 ± 0.8 | 8.0 (5.1–15.4) | 2.7 | 12.3 |
+| no T2w | NCR | 16.3 ± 3.3 | 4.1 (1.3–8.1) | 4.7 | 7.6 |
+| no T2w | ED | 7.5 ± 0.4 | 4.0 (1.9–7.6) | 0.0 | 7.5 |
+| no T2w | ET | 10.0 ± 0.5 | 1.4 (1.0–3.4) | 2.0 | 6.2 |
+| no FLAIR | NCR | 16.6 ± 1.3 | 4.2 (1.6–8.2) | 4.3 | 8.5 |
+| no FLAIR | ED | 8.6 ± 0.9 | 5.0 (3.0–9.5) | 0.0 | 8.6 |
+| no FLAIR | ET | 8.2 ± 1.6 | 1.6 (1.0–3.2) | 1.3 | 5.6 |
+
 **Relative Dice drop** (Δ / baseline Dice):
 
 | Removed | NCR | ED | ET | WT | TC |

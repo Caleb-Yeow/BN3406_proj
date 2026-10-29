@@ -178,6 +178,22 @@ for e in EXPS[1:]:
     w(f"| {NICE[e].replace('no ', '')} | " + " | ".join(cells) + " |")
 w("")
 
+# HD95 in detail (written by analyze.py)
+hd = pd.read_csv(P["results_dir"] / "hd95.csv").set_index(["exp", "region"])
+w("**HD95 in detail** (mm, lower is better; averaged over 3 seeds). HD95 = 95th percentile of the distances between "
+  "the predicted and ground-truth surfaces, computed per case in 3D with MONAI `compute_hausdorff_distance` "
+  f"(1 mm voxels, so voxels = mm). A case scores {cfg['eval']['hd95_empty']} mm when a region is predicted but "
+  "absent, or present but not predicted at all; a few such cases dominate the mean, so the median is the more "
+  "robust summary. Figure: outputs/figures/hd95_boxplot.png.\n")
+w("| Model | Region | Mean | Median (IQR) | Cases at 373 mm | Mean without them |")
+w("|---|---|---|---|---|---|")
+for e in EXPS:
+    for r in ["ncr", "ed", "et"]:
+        h = hd.loc[(e, r)]
+        w(f"| {NICE[e]} | {r.upper()} | {h['mean']:.1f} ± {h['mean_std']:.1f} | {h['median']:.1f} "
+          f"({h['q25']:.1f}–{h['q75']:.1f}) | {h['n_empty']:.1f} | {h['mean_no_empty']:.1f} |")
+w("")
+
 # relative drop
 w("**Relative Dice drop** (Δ / baseline Dice):\n")
 w("| Removed | NCR | ED | ET | WT | TC |")

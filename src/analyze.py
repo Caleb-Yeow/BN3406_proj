@@ -4,7 +4,8 @@ Writes to outputs/results/:
   summary.csv  mean and std over seeds of each metric, per experiment
   delta.csv    change vs the 4-modality baseline, with a paired Wilcoxon test over test cases
   ranking.csv  modalities ranked by Dice drop for each sub-region
-And to outputs/figures/: delta_dice.png, val_curves.png
+  hd95.csv     HD95 mean, median, IQR and number of empty-region cases, per experiment and region
+And to outputs/figures/: delta_dice.png, val_curves.png, hd95_boxplot.png
 
 Usage (from the project folder):
     python src/analyze.py
@@ -106,6 +107,41 @@ def main():
                   title_fontsize=7)
         fig.tight_layout()
         fig.savefig(fig_dir / "val_curves.png", dpi=200)
+
+    # HD95 in detail: the mean is pulled up by cases scored hd95_empty (region missed entirely or predicted where
+    # absent), so also report the median, the number of such cases and the mean without them
+    empty = cfg["eval"]["hd95_empty"]
+    rows = []
+    for exp in order:
+        for r in REGIONS + ["wt", "tc"]:
+            per_seed = []
+            for seed, g in cases[cases["exp"] == exp].groupby("seed"):
+                v = g[f"hd95_{r}"]
+                per_seed.append({"mean": v.mean(), "median": v.median(), "q25": v.quantile(0.25), "q75": v.quantile(0.75),
+                                 "n_empty": (v == empty).sum(), "mean_no_empty": v[v != empty].mean()})
+            s = pd.DataFrame(per_seed)
+            rows.append({"exp": exp, "region": r, "mean": s["mean"].mean(), "mean_std": s["mean"].std(),
+                         "median": s["median"].mean(), "q25": s["q25"].mean(), "q75": s["q75"].mean(),
+                         "n_empty": s["n_empty"].mean(), "mean_no_empty": s["mean_no_empty"].mean()})
+    pd.DataFrame(rows).round(3).to_csv(res_dir / "hd95.csv", index=False)
+
+    # Box plot of per-case HD95 (seed-averaged), outliers hidden; log scale because of the long tail
+    hd = cases.groupby(["exp", "case"])[[f"hd95_{r}" for r in REGIONS]].mean()
+    fig, ax = plt.subplots(figsize=(7, 4))
+    width = 0.8 / len(order)
+    for i, exp in enumerate(order):
+        data = [hd.loc[exp][f"hd95_{r}"].clip(lower=1).values for r in REGIONS]
+        ax.boxplot(data, positions=[j + (i - (len(order) - 1) / 2) * width for j in range(len(REGIONS))],
+                   widths=width * 0.9, showfliers=False, patch_artist=True,
+                   boxprops=dict(facecolor=f"C{i}", alpha=0.7), medianprops=dict(color="black"))
+        ax.bar(0, 0, color=f"C{i}", alpha=0.7, label=exp.replace("_", " "))  # legend handle only
+    ax.set_xticks(range(len(REGIONS)), [r.upper() for r in REGIONS])
+    ax.set_yscale("log")
+    ax.set_yticks([1, 2, 5, 10, 20, 50], ["1", "2", "5", "10", "20", "50"])
+    ax.set_ylabel("HD95 per test case (mm, log scale)")
+    ax.legend(fontsize=8, ncol=5, loc="lower center", bbox_to_anchor=(0.5, 1.0), frameon=False)
+    fig.tight_layout()
+    fig.savefig(fig_dir / "hd95_boxplot.png", dpi=200)
 
     cols = [(f"{m}_{r}", "mean") for m in ("dice", "hd95") for r in REGIONS]
     print(summary[[c for c in cols if c in summary]].round(4).to_string())
