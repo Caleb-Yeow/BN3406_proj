@@ -60,8 +60,8 @@ src/
   run_all.py             train + evaluate all 15 runs, then analyse (resumes where it stopped)
 checkpoints/             <exp>_seed<k>.pt
 outputs/logs/            per-epoch training logs (CSV)
-outputs/results/         per-case test metrics, summary.csv, delta.csv, ranking.csv
-outputs/figures/         delta_dice.png, val_curves.png, overlays_seed<k>.png
+outputs/results/         per-case test metrics, summary.csv, delta.csv, ranking.csv, hd95.csv
+outputs/figures/         delta_dice.png, metrics_overview.png, hd95_boxplot.png, val_curves.png, overlays_seed<k>.png
 notebooks/               exploration
 report/                  MICCAI report (see report/outline.md)
 slides/                  presentation
@@ -98,9 +98,9 @@ Dataset: https://nusu-my.sharepoint.com/:f:/g/personal/e0920791_u_nus_edu/IgBRO1
 
 ## Compute and disk (measured on an RTX 4050 Laptop, 6 GB)
 
-- A full epoch is ~15,000 iterations + validation on ~26k slices: about 7.5 min with mixed precision,
-  under 1 GB of GPU memory. A run is at most 40 epochs (~5 h); early stopping usually ends it sooner.
-  All 15 runs take roughly a day on this laptop.
+- A full epoch is 15,126 iterations + validation on 26k slices: median 5.8 min with mixed precision,
+  under 1 GB of GPU memory. Early stopping ended every run after 9–17 epochs (about 1.4 h per run).
+  All 15 runs took 20.4 GPU-hours on this laptop.
 - Every epoch saves `checkpoints/<run>_last.pt`. If training stops (sleep, crash, restart), run
   `run_all.py` again: finished runs are skipped and the interrupted run resumes from its last epoch.
 - `data/processed/` is 54 GB (1,251 cases, 174,121 brain slices, float16). Check free space first.
