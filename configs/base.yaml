@@ -1,0 +1,59 @@
+# Shared settings for the baseline and every leave-one-modality-out variant.
+# Only `experiments` differ between runs; everything else must stay identical.
+
+paths:                       # relative to the project folder, or absolute
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  checkpoints_dir: checkpoints
+  logs_dir: outputs/logs
+  results_dir: outputs/results
+  figures_dir: outputs/figures
+
+# Channel order in the processed arrays
+modalities: [t1n, t1c, t2w, t2f]
+
+# Experiment name -> modalities fed to the network
+experiments:
+  all:    [t1n, t1c, t2w, t2f]   # baseline
+  no_t1n: [t1c, t2w, t2f]
+  no_t1c: [t1n, t2w, t2f]
+  no_t2w: [t1n, t1c, t2f]
+  no_t2f: [t1n, t1c, t2w]
+
+split:
+  seed: 42                   # fixed for every run, so all models see the same patients
+  train: 0.70
+  val: 0.15
+  test: 0.15
+
+preprocess:
+  crop_size: 192             # in-plane crop centred on the brain, no resizing (1 mm isotropic already)
+  keep_slices: brain         # brain = drop axial slices with no brain voxels; all = keep every slice
+
+augment:
+  flip_prob: 0.5             # left-right flip
+  rotate_deg: 10             # uniform in [-10, +10] degrees, nearest-neighbour for the mask
+
+model:                       # MONAI UNet
+  channels: [32, 64, 128, 256, 512]
+  strides: [2, 2, 2, 2]      # 4 downsampling levels
+  num_res_units: 0           # plain U-Net, as in the group decision sheet
+  out_channels: 4            # 0 BG, 1 NCR, 2 ED, 3 ET
+
+train:
+  seeds: [0, 1, 2]           # training seeds (weight init, sampling, augmentation)
+  loss: dice_ce              # equal-weight Dice + cross-entropy
+  optimizer: adam
+  lr: 1.0e-4
+  batch_size: 8
+  max_epochs: 40
+  patience: 5                # early stopping on mean validation Dice (NCR, ED, ET); sheet says 5-8
+  samples_per_epoch: null    # null = every training slice each epoch (full epochs, as in the sheet)
+  val_batch_size: 32
+  num_workers: 4             # training data loaders
+  val_num_workers: 2         # validation loaders (idle during training; results don't depend on this)
+  amp: true                  # mixed precision, keeps memory low on a 6 GB GPU
+
+eval:
+  hd95_empty: 373.13         # BraTS convention when exactly one of prediction/ground truth is empty
