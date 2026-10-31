@@ -143,11 +143,13 @@ def main():
     fig.tight_layout()
     fig.savefig(fig_dir / "hd95_boxplot.png", dpi=200)
 
-    # Overview of every metric: grouped bars per sub-region, one colour per experiment, error bars = std over seeds
-    panels = [("dice", "Dice ↑"), ("iou", "IoU ↑"), ("hd95", "HD95 (mm, mean) ↓"), ("recall", "Recall ↑")]
-    fig, axes = plt.subplots(2, 3, figsize=(13, 7))
+    # Every metric, as one overview figure and as one figure per metric (outputs/figures/metrics/).
+    # Grouped bars per sub-region, one colour per experiment, error bars = std over seeds.
+    region_metrics = [("dice", "Dice ↑"), ("iou", "IoU ↑"), ("hd95", "HD95 (mm, mean) ↓"), ("recall", "Recall ↑")]
+    overall_metrics = [("accuracy", "Voxel accuracy ↑"), ("recall_bg", "Background recall ↑")]
     width = 0.8 / len(order)
-    for ax, (m, title) in zip(axes.flat, panels):
+
+    def region_bars(ax, m, title):
         for i, exp in enumerate(order):
             xs = [j + (i - (len(order) - 1) / 2) * width for j in range(len(REGIONS))]
             ax.bar(xs, [summary.loc[exp, (f"{m}_{r}", "mean")] for r in REGIONS], width,
@@ -157,16 +159,37 @@ def main():
         ax.set_title(title)
         if m != "hd95":
             ax.set_ylim(0, 1)
-    for ax, (m, title) in zip(axes.flat[4:], [("accuracy", "Voxel accuracy ↑"), ("recall_bg", "Background recall ↑")]):
+
+    def overall_bars(ax, m, title):
         vals = [summary.loc[exp, (m, "mean")] for exp in order]
         ax.bar(range(len(order)), vals, yerr=[summary.loc[exp, (m, "std")] for exp in order], capsize=2,
                color=[f"C{i}" for i in range(len(order))])
         ax.set_xticks(range(len(order)), [e.replace("_", " ") for e in order], fontsize=8)
         ax.set_ylim(min(vals) - 0.002, 1)  # zoomed: every model is above 0.99 because background dominates
         ax.set_title(title + " (zoomed axis)")
+
+    fig, axes = plt.subplots(2, 3, figsize=(13, 7))
+    for ax, (m, title) in zip(axes.flat, region_metrics):
+        region_bars(ax, m, title)
+    for ax, (m, title) in zip(axes.flat[4:], overall_metrics):
+        overall_bars(ax, m, title)
     axes.flat[0].legend(fontsize=8, ncol=5, loc="lower left", bbox_to_anchor=(0, 1.12), frameon=False)
     fig.tight_layout()
     fig.savefig(fig_dir / "metrics_overview.png", dpi=200)
+    plt.close(fig)
+
+    (fig_dir / "metrics").mkdir(exist_ok=True)
+    for m, title in region_metrics + overall_metrics:
+        fig, ax = plt.subplots(figsize=(6, 4))
+        if (m, title) in region_metrics:
+            region_bars(ax, m, title)
+            ax.legend(fontsize=8, ncol=5, loc="lower center", bbox_to_anchor=(0.5, 1.08), frameon=False)
+        else:
+            overall_bars(ax, m, title)
+        ax.set_ylabel(title.rstrip(" ↑↓"))
+        fig.tight_layout()
+        fig.savefig(fig_dir / "metrics" / f"{m}.png", dpi=200)
+        plt.close(fig)
 
     cols = [(f"{m}_{r}", "mean") for m in ("dice", "hd95") for r in REGIONS]
     print(summary[[c for c in cols if c in summary]].round(4).to_string())
